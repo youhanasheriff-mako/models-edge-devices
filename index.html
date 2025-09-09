@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Report: Small Vision Models & Edge AI Hardware</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+    <style>
+        /* CSS Design & Typography System */
+        :root {
+            --primary-blue: #1e3a8a;
+            --primary-blue-light: #3b82f6;
+            --secondary-green: #059669;
+            --secondary-green-light: #10b981;
+            --secondary-green-dark: #047857;
+            --accent-orange: #f97316;
+            --neutral-50: #fafafa;
+            --neutral-100: #f5f5f5;
+            --neutral-200: #e5e5e5;
+            --neutral-300: #d4d4d4;
+            --neutral-600: #525252;
+            --neutral-800: #262626;
+            --neutral-900: #171717;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--neutral-50);
+            color: var(--neutral-800);
+        }
+
+        .font-sans { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Crimson Text', serif; }
+
+        h1, h2, h3, h4 {
+            font-family: 'Crimson Text', serif;
+            color: var(--primary-blue);
+        }
+        
+        .section-anchor {
+            scroll-margin-top: 4rem;
+        }
+
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .fade-in-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Table of Contents Styling */
+        .toc a {
+            transition: all 0.2s ease-in-out;
+            border-left: 2px solid transparent;
+        }
+        .toc a.active {
+            color: var(--primary-blue-light);
+            border-left-color: var(--primary-blue-light);
+            transform: translateX(4px);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .toc a:hover {
+            color: var(--primary-blue-light);
+            border-left-color: var(--primary-blue-light);
+        }
+        
+        /* Glassmorphism Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Table Styling */
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .styled-table th, .styled-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+        .styled-table th {
+            background-color: var(--neutral-100);
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-family: 'Inter', sans-serif;
+        }
+        .styled-table tbody tr:nth-child(even) {
+            background-color: var(--neutral-50);
+        }
+        .styled-table tbody tr:hover {
+            background-color: #eef2ff; /* indigo-50 */
+        }
+
+        /* Mermaid Diagram Interaction Styling */
+        .mermaid-container {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--neutral-200);
+            border-radius: 0.5rem;
+            background-color: white;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        .mermaid-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .mermaid-diagram {
+            cursor: grab;
+            transition: transform 0.2s ease-out;
+            width: 100%;
+            height: 100%;
+        }
+        .mermaid-diagram:active { cursor: grabbing; }
+        .mermaid-controls {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .mermaid-controls button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .mermaid-controls button:hover {
+            background-color: var(--primary-blue-light);
+        }
+
+        /* Mobile Layout */
+        @media (max-width: 1024px) {
+            .content-offset {
+                margin-left: 0;
+            }
+            .toc-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral-100">
+
+    <nav class="toc-container fixed top-0 left-0 h-full w-[280px] bg-white/70 backdrop-blur-lg border-r border-neutral-200 p-6 flex flex-col">
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold font-serif text-primary-blue">Technical Report</h2>
+            <p class="text-sm text-neutral-600">Edge AI Vision Systems</p>
+        </div>
+        <div class="toc flex-grow flex flex-col space-y-2 text-neutral-600">
+            <a href="#summary" class="block py-2 px-4 rounded-md font-medium text-sm">Executive Summary</a>
+            <a href="#model-analysis" class="block py-2 px-4 rounded-md font-medium text-sm">Lightweight Vision Models</a>
+            <a href="#hardware-specs" class="block py-2 px-4 rounded-md font-medium text-sm">Edge AI Hardware</a>
+            <a href="#performance" class="block py-2 px-4 rounded-md font-medium text-sm">Performance Analysis</a>
+            <a href="#recommendations" class="block py-2 px-4 rounded-md font-medium text-sm">Strategic Recommendations</a>
+        </div>
+        <div class="mt-auto pt-6 border-t border-neutral-200">
+            <h3 class="text-sm font-semibold text-neutral-800 mb-2">Quick Reference</h3>
+            <div class="text-xs text-neutral-600 space-y-2">
+                <p><strong class="text-secondary-green-dark">Top Performer:</strong> Google Coral</p>
+                <p><strong class="text-accent-orange">Most Flexible:</strong> NVIDIA Jetson Nano</p>
+                <p><strong class="text-primary-blue-light">Best for Budget:</strong> Raspberry Pi 4</p>
+            </div>
+            <div class="text-xs text-neutral-300 mt-4" id="contact-info"></div>
+        </div>
+    </nav>
+
+    <main class="content-offset lg:ml-[280px]">
+        <header id="summary" class="section-anchor min-h-screen bg-gradient-to-br from-blue-900 via-primary-blue to-slate-900 text-white flex items-center justify-center p-4 lg:p-8">
+            <div class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 flex flex-col justify-center text-center lg:text-left">
+                    <h1 class="text-4xl md:text-6xl font-bold font-serif leading-tight">Small Vision Models & Edge AI Hardware</h1>
+                    <p class="mt-4 text-lg md:text-xl text-blue-200 max-w-3xl mx-auto lg:mx-0">A Definitive Technical Guide for Engineers, Researchers, and System Architects on Performance and Compatibility.</p>
+                    <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                        <div class="bg-white/10 p-6 rounded-lg border border-white/20">
+                            <i class="fas fa-microchip text-2xl text-accent-orange mb-3"></i>
+                            <h3 class="font-semibold text-lg mb-2">Primacy of AI Accelerators</h3>
+                            <p class="text-sm text-blue-200">Performance is overwhelmingly dictated by dedicated AI hardware (GPU, TPU) over raw CPU speed.</p>
+                        </div>
+                        <div class="bg-white/10 p-6 rounded-lg border border-white/20">
+                            <i class="fas fa-lock text-2xl text-accent-orange mb-3"></i>
+                            <h3 class="font-semibold text-lg mb-2">Ecosystem Lock-in</h3>
+                            <p class="text-sm text-blue-200">Hardware choice implies commitment to a specific software stack, like CUDA/TensorRT or TensorFlow Lite.</p>
+                        </div>
+                        <div class="bg-white/10 p-6 rounded-lg border border-white/20">
+                            <i class="fas fa-cogs text-2xl text-accent-orange mb-3"></i>
+                            <h3 class="font-semibold text-lg mb-2">Optimization is a Prerequisite</h3>
+                            <p class="text-sm text-blue-200">INT8 quantization is often a mandatory step to unlock the full potential of accelerators like the Edge TPU.</p>
+                        </div>
+                        <div class="bg-white/10 p-6 rounded-lg border border-white/20">
+                            <i class="fas fa-balance-scale text-2xl text-accent-orange mb-3"></i>
+                            <h3 class="font-semibold text-lg mb-2">Application-Dependent Trade-offs</h3>
+                            <p class="text-sm text-blue-200">The optimal model-hardware pairing is a nuanced balance of speed, accuracy, power, and cost.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-6 lg:p-8 flex flex-col">
+                    <h2 class="text-2xl font-semibold font-serif text-white border-b border-white/30 pb-3 mb-4">Executive Summary</h2>
+                    <div class="text-sm text-blue-100 space-y-4 overflow-y-auto pr-2">
+                        <p>The proliferation of AI into real-world applications has catalyzed a paradigm shift to processing at the network edge. Edge AI in computer vision offers critical advantages in latency, privacy, and bandwidth.</p>
+                        <p>However, deploying sophisticated models on resource-constrained devices presents a formidable challenge due to strict power, memory, and computational limits.</p>
+                        <p>This report provides an exhaustive analysis of prominent lightweight vision models, details popular edge hardware platforms, and delivers an empirical assessment of their performance and compatibility to facilitate informed decision-making in the design and deployment of edge AI systems.</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="py-20 bg-white fade-in-section">
+            <div class="max-w-4xl mx-auto px-6">
+                <h2 class="text-3xl font-bold text-center mb-12">The Shift to Edge Intelligence</h2>
+                <div class="text-neutral-600 space-y-6 text-lg leading-relaxed font-serif italic text-center border-l-4 border-secondary-green pl-8">
+                    <p>"The performance of computer vision models on edge devices is overwhelmingly dictated by the presence and nature of a dedicated AI accelerator... A significant performance chasm exists between general-purpose single-board computers and those equipped with specialized hardware."</p>
+                </div>
+                <div class="mt-12 text-neutral-700 space-y-4">
+                    <p>Edge AI offers significant advantages in latency, privacy, and bandwidth efficiency, which are critical for applications ranging from industrial automation and autonomous robotics to smart retail and healthcare monitoring. However, deploying sophisticated vision models on resource-constrained edge devices presents a formidable engineering challenge. These devices operate under strict limitations of computational power, memory, and energy consumption, often precluding the use of large, state-of-the-art models developed for cloud infrastructure.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="model-analysis" class="section-anchor py-20 bg-neutral-100 fade-in-section">
+            <div class="max-w-7xl mx-auto px-6">
+                <h2 class="text-4xl font-bold text-center">Analysis of Lightweight Vision Models</h2>
+                <p class="text-center text-neutral-600 mt-2 max-w-3xl mx-auto">Deploying vision on edge devices hinges on neural networks designed for computational efficiency, balancing performance, accuracy, and resource footprint.</p>
+
+                <article class="mt-16">
+                    <h3 class="text-2xl font-semibold mb-6">Foundational Concepts in Model Efficiency</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="text-xl font-semibold text-secondary-green-dark mb-3">Architectural Innovations</h4>
+                            <ul class="space-y-4 text-neutral-700">
+                                <li><strong>Depthwise Separable Convolutions:</strong> Factorizes standard convolutions into two efficient steps (depthwise and pointwise) to drastically reduce computations, popularized by MobileNet.</li>
+                                <li><strong>Inverted Residuals & Linear Bottlenecks:</strong> A "narrow -> wide -> narrow" block structure (MobileNetV2) that operates on richer feature spaces internally while maintaining a compact representation.</li>
+                                <li><strong>Compound Scaling:</strong> A principled method (EfficientNet) to uniformly scale network depth, width, and resolution, achieving superior accuracy and efficiency.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-semibold text-secondary-green-dark mb-3">Post-Training Optimization</h4>
+                            <ul class="space-y-4 text-neutral-700">
+                                <li><strong>Quantization:</strong> Converts model weights from 32-bit floating-point to 8-bit integer (INT8), reducing model size by ~4x and enabling faster inference on specialized hardware like the Edge TPU.</li>
+                                <li><strong>Pruning & Knowledge Distillation:</strong> Techniques to remove redundant weights (pruning) or train a small "student" model to mimic a larger "teacher" model, compressing knowledge into a more efficient architecture.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="mt-16">
+                    <h3 class="text-2xl font-semibold mb-6 text-center">Key Model Architectures</h3>
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Primary Task</th>
+                                <th>Parameters (M)</th>
+                                <th>GFLOPs (at resolution)</th>
+                                <th>Typical Input Resolution</th>
+                                <th>Model Size (FP32 / INT8 MB)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>MobileNetV2 (alpha=1.0)</td>
+                                <td>Classification</td>
+                                <td>3.5</td>
+                                <td>0.3 (at 224x224)</td>
+                                <td>224x224</td>
+                                <td>~14 / ~4</td>
+                            </tr>
+                            <tr>
+                                <td>EfficientNet-Lite0</td>
+                                <td>Classification</td>
+                                <td>4.7</td>
+                                <td>0.4 (at 224x224)</td>
+                                <td>224x224</td>
+                                <td>~19 / ~5</td>
+                            </tr>
+                            <tr>
+                                <td>EfficientNet-Lite4</td>
+                                <td>Classification</td>
+                                <td>13.0</td>
+                                <td>2.6 (at 300x300)</td>
+                                <td>300x300</td>
+                                <td>~52 / ~13</td>
+                            </tr>
+                            <tr>
+                                <td>YOLOv7-tiny</td>
+                                <td>Object Detection</td>
+                                <td>6.2</td>
+                                <td>13.8 (at 640x640)</td>
+                                <td>640x640</td>
+                                <td>~25 / ~7</td>
+                            </tr>
+                            <tr>
+                                <td>MobileNetV2 + SSDLite</td>
+                                <td>Object Detection</td>
+                                <td>4.3</td>
+                                <td>0.8 (at 300x300)</td>
+                                <td>300x300</td>
+                                <td>~17 / ~5</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </article>
+            </div>
+        </section>
+
+        <section id="hardware-specs" class="section-anchor py-20 bg-white fade-in-section">
+            <div class="max-w-7xl mx-auto px-6">
+                <h2 class="text-4xl font-bold text-center">Technical Specifications of Edge AI Hardware</h2>
+                <p class="text-center text-neutral-600 mt-2 max-w-3xl mx-auto">The performance of a vision model is intrinsically tied to the hardware on which it is deployed, from general-purpose SBCs to highly specialized accelerators.</p>
+
+                <div class="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="border border-neutral-200 rounded-lg p-6">
+                        <h3 class="text-2xl font-semibold mb-4">Raspberry Pi 4 Model B</h3>
+                        <p class="text-sm text-neutral-600 mb-4">A ubiquitous, CPU-bound SBC ideal for prototyping and non-real-time tasks.</p>
+                        <ul class="space-y-3 text-sm">
+                            <li><i class="fa-fw fas fa-microchip text-accent-orange mr-2"></i><strong>CPU:</strong> Quad-core ARM Cortex-A72 @ 1.8 GHz</li>
+                            <li><i class="fa-fw fas fa-memory text-accent-orange mr-2"></i><strong>RAM:</strong> 1, 2, 4, or 8 GB LPDDR4</li>
+                            <li><i class="fa-fw fas fa-bolt text-accent-orange mr-2"></i><strong>AI Accelerator:</strong> None (CPU-based inference)</li>
+                            <li><i class="fa-fw fas fa-code text-accent-orange mr-2"></i><strong>Frameworks:</strong> TensorFlow Lite, PyTorch</li>
+                        </ul>
+                    </div>
+                    <div class="border-2 border-secondary-green rounded-lg p-6 bg-green-50/50 shadow-lg">
+                        <h3 class="text-2xl font-semibold mb-4 text-secondary-green-dark">NVIDIA Jetson Nano</h3>
+                        <p class="text-sm text-neutral-600 mb-4">A powerful GPU-accelerated platform for flexible, high-performance AI workloads.</p>
+                        <ul class="space-y-3 text-sm">
+                            <li><i class="fa-fw fas fa-microchip text-secondary-green mr-2"></i><strong>CPU:</strong> Quad-core ARM Cortex-A57 @ 1.43 GHz</li>
+                            <li><i class="fa-fw fas fa-memory text-secondary-green mr-2"></i><strong>RAM:</strong> 4 GB LPDDR4 (Shared)</li>
+                            <li><i class="fa-fw fas fa-bolt text-secondary-green mr-2"></i><strong>AI Accelerator:</strong> 128-core NVIDIA Maxwell GPU</li>
+                            <li><i class="fa-fw fas fa-code text-secondary-green mr-2"></i><strong>Frameworks:</strong> TensorRT, CUDA, TensorFlow, PyTorch</li>
+                        </ul>
+                    </div>
+                    <div class="border border-neutral-200 rounded-lg p-6">
+                        <h3 class="text-2xl font-semibold mb-4">Google Coral Dev Board</h3>
+                        <p class="text-sm text-neutral-600 mb-4">A purpose-built SBC with a TPU for high-speed, low-power ML inference.</p>
+                        <ul class="space-y-3 text-sm">
+                            <li><i class="fa-fw fas fa-microchip text-primary-blue-light mr-2"></i><strong>CPU:</strong> Quad-core ARM Cortex-A53</li>
+                            <li><i class="fa-fw fas fa-memory text-primary-blue-light mr-2"></i><strong>RAM:</strong> 1 or 4 GB LPDDR4</li>
+                            <li><i class="fa-fw fas fa-bolt text-primary-blue-light mr-2"></i><strong>AI Accelerator:</strong> Google Edge TPU (4.0 TOPS)</li>
+                            <li><i class="fa-fw fas fa-code text-primary-blue-light mr-2"></i><strong>Frameworks:</strong> TensorFlow Lite (Quantized)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance" class="section-anchor py-20 bg-neutral-100 fade-in-section">
+            <div class="max-w-7xl mx-auto px-6">
+                <h2 class="text-4xl font-bold text-center">Empirical Performance Analysis</h2>
+                <p class="text-center text-neutral-600 mt-2 max-w-3xl mx-auto">Real-world benchmarks reveal the true capabilities of each platform, highlighting the profound impact of hardware acceleration and software optimization.</p>
+                
+                <div class="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4">MobileNetV2-SSD Performance</h3>
+                        <p class="text-neutral-700 mb-6">Comparing a single, standardized model across all three platforms clearly quantifies the value of specialized AI hardware. The Google Coral's Edge TPU provides a >5x speedup over the CPU-bound Raspberry Pi 4 for this object detection task.</p>
+                        <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th>Device</th>
+                                    <th>AI Accelerator</th>
+                                    <th>FPS</th>
+                                    <th>Relative Speedup</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Raspberry Pi 4</td>
+                                    <td>N/A (CPU only)</td>
+                                    <td>13</td>
+                                    <td>1.0x</td>
+                                </tr>
+                                <tr>
+                                    <td>NVIDIA Jetson Nano</td>
+                                    <td>128-core Maxwell GPU</td>
+                                    <td>39</td>
+                                    <td>~3.0x</td>
+                                </tr>
+                                <tr>
+                                    <td>Google Coral Dev Board</td>
+                                    <td>Google Edge TPU</td>
+                                    <td>71</td>
+                                    <td>~5.5x</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-center">Inference Speed (FPS) Comparison</h3>
+                        <div class="mermaid-container">
+                             <div class="mermaid-controls">
+                                <button title="Zoom In" data-action="zoom-in"><i class="fas fa-plus"></i></button>
+                                <button title="Zoom Out" data-action="zoom-out"><i class="fas fa-minus"></i></button>
+                                <button title="Reset" data-action="reset"><i class="fas fa-arrows-rotate"></i></button>
+                                <button title="Fullscreen" data-action="fullscreen"><i class="fas fa-expand"></i></button>
+                            </div>
+                            <div class="mermaid mermaid-diagram" id="fps-chart">
+                                xychart-beta
+                                    title "MobileNetV2-SSD Inference Speed"
+                                    x-axis "Platform" [Raspberry Pi 4, Jetson Nano, Coral Dev Board]
+                                    y-axis "Frames Per Second (FPS)"
+                                    bar [13, 39, 71]
+                            </div>
+                        </div>
+                         <p class="text-xs text-center text-neutral-500 mt-2">Interactive chart: Click and drag to pan, use controls to zoom. Touch gestures supported.</p>
+                    </div>
+                </div>
+
+                 <div class="mt-16">
+                     <h3 class="text-2xl font-semibold mb-6 text-center">Platform Performance Profiles</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-lg text-primary-blue">Raspberry Pi 4 (CPU Baseline)</h4>
+                            <p class="text-sm mt-2">Struggles with real-time detection. Performance is highly dependent on software runtime (e.g., TFLite) and quantization. Unsuitable for high-FPS video tasks like YOLOv7-tiny (0.9-2.1 FPS).</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                             <h4 class="font-bold text-lg text-primary-blue">NVIDIA Jetson Nano (GPU)</h4>
+                            <p class="text-sm mt-2">Achieves near-real-time performance with TensorRT optimization (e.g., 26 FPS for YOLOv7-tiny). Offers great flexibility but can be CPU-bottlenecked in the data pipeline.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                             <h4 class="font-bold text-lg text-primary-blue">Google Coral (TPU)</h4>
+                            <p class="text-sm mt-2">Exceptional performance for compatible, INT8-quantized models (e.g., >300 FPS for MobileNetV2 classification). Performance hinges on full model offload to the Edge TPU.</p>
+                        </div>
+                     </div>
+                 </div>
+
+            </div>
+        </section>
+
+        <section id="recommendations" class="section-anchor py-20 bg-white fade-in-section">
+            <div class="max-w-7xl mx-auto px-6">
+                <h2 class="text-4xl font-bold text-center">Synthesis & Strategic Recommendations</h2>
+                <p class="text-center text-neutral-600 mt-2 max-w-3xl mx-auto">The optimal solution is a multi-faceted decision balancing competing constraints of performance, power, cost, and development complexity.</p>
+
+                <article class="mt-16">
+                    <h3 class="text-2xl font-semibold mb-8 text-center">The Performance-Accuracy-Power-Cost Trade-off</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="text-center p-6">
+                            <div class="text-4xl text-secondary-green mb-3"><i class="fas fa-tachometer-alt"></i></div>
+                            <h4 class="font-semibold text-lg">Accuracy vs. Speed</h4>
+                            <p class="text-sm text-neutral-600 mt-1">Faster models may have lower accuracy (mAP). The choice depends on application needs—high security vs. high throughput.</p>
+                        </div>
+                        <div class="text-center p-6">
+                            <div class="text-4xl text-secondary-green mb-3"><i class="fas fa-battery-half"></i></div>
+                            <h4 class="font-semibold text-lg">Performance vs. Power</h4>
+                            <p class="text-sm text-neutral-600 mt-1">High FPS often means higher power consumption. The Coral's efficiency (~2W) is ideal for battery-powered systems.</p>
+                        </div>
+                        <div class="text-center p-6">
+                            <div class="text-4xl text-secondary-green mb-3"><i class="fas fa-dollar-sign"></i></div>
+                            <h4 class="font-semibold text-lg">Performance vs. Cost</h4>
+                            <p class="text-sm text-neutral-600 mt-1">Higher cost of accelerators like Jetson/Coral directly translates to a 3x-5.5x performance increase, a necessary ROI for commercial projects.</p>
+                        </div>
+                         <div class="text-center p-6">
+                            <div class="text-4xl text-secondary-green mb-3"><i class="fas fa-code-branch"></i></div>
+                            <h4 class="font-semibold text-lg">Flexibility vs. Specialization</h4>
+                            <p class="text-sm text-neutral-600 mt-1">Jetson's CUDA ecosystem offers broad support, while Coral's TPU requires strict adherence to the TFLite/INT8 pipeline.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="mt-16">
+                     <h3 class="text-2xl font-semibold mb-8 text-center">Final Decision Framework</h3>
+                     <table class="styled-table">
+                         <thead>
+                             <tr>
+                                 <th>Application Requirement</th>
+                                 <th>Primary Choice</th>
+                                 <th>Secondary Choice</th>
+                                 <th>Justification & Key Considerations</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                            <tr>
+                                <td class="font-semibold">Highest Throughput / Real-Time Video</td>
+                                <td>Google Coral Dev Board</td>
+                                <td>NVIDIA Jetson Nano</td>
+                                <td>The Edge TPU delivers the highest FPS for compatible, quantized models. Jetson is a strong alternative with broader model support via TensorRT.</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Lowest Power / Battery-Powered</td>
+                                <td>Google Coral Dev Board</td>
+                                <td>N/A</td>
+                                <td>The Edge TPU's industry-leading performance-per-watt (2 TOPS/watt) is unmatched for power-constrained applications.</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Maximum Model Flexibility</td>
+                                <td>NVIDIA Jetson Nano</td>
+                                <td>Raspberry Pi 4</td>
+                                <td>The CUDA/TensorRT stack supports a wider range of models and data types than the restrictive Edge TPU compiler. RPi 4 offers software flexibility without acceleration.</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Lowest Cost / Prototyping</td>
+                                <td>Raspberry Pi 4 Model B</td>
+                                <td>N/A</td>
+                                <td>Offers the lowest cost of entry and the largest support community, ideal for initial development and projects where real-time performance is not a strict requirement.</td>
+                            </tr>
+                         </tbody>
+                     </table>
+                </article>
+            </div>
+        </section>
+
+        <footer class="bg-neutral-800 text-neutral-300 py-8">
+            <div class="max-w-7xl mx-auto px-6 text-center text-sm">
+                <p>This technical report was generated based on comprehensive research into small vision models and edge AI hardware.</p>
+                <p class="mt-2" id="footer-contact"></p>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- Configuration Management ---
+        const CONFIG = {
+            contact: {
+                email: "contact@edgeai-analytics.dev",
+                generatedDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            }
+        };
+
+        // --- Dynamic Content Population ---
+        const contactInfoEl = document.getElementById('contact-info');
+        if (contactInfoEl) {
+            contactInfoEl.innerHTML = `Generated: ${CONFIG.contact.generatedDate}`;
+        }
+        const footerContactEl = document.getElementById('footer-contact');
+        if(footerContactEl) {
+            footerContactEl.innerHTML = `For inquiries, contact: <a href="mailto:${CONFIG.contact.email}" class="text-primary-blue-light hover:underline">${CONFIG.contact.email}</a>`;
+        }
+        
+        // --- Mermaid.js Initialization ---
+        mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
+            'primaryColor': '#fafafa',
+            'primaryTextColor': '#262626',
+            'primaryBorderColor': '#d4d4d4',
+            'lineColor': '#525252',
+            'secondaryColor': '#eef2ff',
+            'tertiaryColor': '#f5f5f5',
+            'fontFamily': 'Inter',
+        }});
+        mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+
+
+        // --- Intersection Observer for Fade-in Animations ---
+        const sections = document.querySelectorAll('.fade-in-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    // Optional: unobserve after first intersection
+                    // observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // --- Table of Contents Active Section Highlighting ---
+        const tocLinks = document.querySelectorAll('.toc a');
+        const contentSections = document.querySelectorAll('.section-anchor');
+
+        const highlightTocLink = () => {
+            let currentSection = '';
+            contentSections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - sectionHeight / 3)) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === currentSection) {
+                    link.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', highlightTocLink);
+        highlightTocLink(); // Initial call
+
+        // --- Mermaid Diagram Interactive Controls ---
+        const mermaidContainer = document.querySelector('.mermaid-container');
+        if (mermaidContainer) {
+            const diagram = mermaidContainer.querySelector('.mermaid-diagram');
+            const controls = mermaidContainer.querySelector('.mermaid-controls');
+            let scale = 1;
+            let panning = false;
+            let pointX = 0;
+            let pointY = 0;
+            let start = { x: 0, y: 0 };
+            
+            const setTransform = () => {
+                diagram.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+            }
+
+            const handleMouseDown = (e) => {
+                e.preventDefault();
+                panning = true;
+                start = { x: e.clientX - pointX, y: e.clientY - pointY };
+                diagram.style.cursor = 'grabbing';
+            };
+
+            const handleMouseUp = () => {
+                panning = false;
+                diagram.style.cursor = 'grab';
+            };
+
+            const handleMouseMove = (e) => {
+                if (!panning) return;
+                pointX = e.clientX - start.x;
+                pointY = e.clientY - start.y;
+                setTransform();
+            };
+            
+            const handleWheel = (e) => {
+                e.preventDefault();
+                const xs = (e.clientX - pointX) / scale;
+                const ys = (e.clientY - pointY) / scale;
+                const delta = (e.wheelDelta ? e.wheelDelta : -e.deltaY);
+                (delta > 0) ? (scale *= 1.1) : (scale /= 1.1);
+                scale = Math.min(Math.max(0.25, scale), 4);
+                pointX = e.clientX - xs * scale;
+                pointY = e.clientY - ys * scale;
+                setTransform();
+            };
+
+            // Touch events for mobile
+            let initialDistance = 0;
+            let initialScale = 1;
+
+            const getDistance = (touches) => {
+                return Math.sqrt(Math.pow(touches[0].pageX - touches[1].pageX, 2) + Math.pow(touches[0].pageY - touches[1].pageY, 2));
+            };
+            
+            const handleTouchStart = (e) => {
+                if (e.touches.length === 1) {
+                    panning = true;
+                    start = { x: e.touches[0].clientX - pointX, y: e.touches[0].clientY - pointY };
+                } else if (e.touches.length === 2) {
+                    panning = false;
+                    initialDistance = getDistance(e.touches);
+                    initialScale = scale;
+                }
+            };
+            
+            const handleTouchMove = (e) => {
+                if (panning && e.touches.length === 1) {
+                    pointX = e.touches[0].clientX - start.x;
+                    pointY = e.touches[0].clientY - start.y;
+                    setTransform();
+                } else if (e.touches.length === 2) {
+                    const newDist = getDistance(e.touches);
+                    scale = initialScale * (newDist / initialDistance);
+                    scale = Math.min(Math.max(0.25, scale), 4);
+                    setTransform();
+                }
+            };
+            
+            const handleTouchEnd = () => {
+                panning = false;
+            };
+
+            diagram.addEventListener('mousedown', handleMouseDown);
+            diagram.addEventListener('mouseup', handleMouseUp);
+            diagram.addEventListener('mouseleave', handleMouseUp);
+            diagram.addEventListener('mousemove', handleMouseMove);
+            diagram.addEventListener('wheel', handleWheel);
+
+            diagram.addEventListener('touchstart', handleTouchStart);
+            diagram.addEventListener('touchmove', handleTouchMove);
+            diagram.addEventListener('touchend', handleTouchEnd);
+
+
+            controls.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                const action = button.dataset.action;
+                
+                if (action === 'zoom-in') {
+                    scale = Math.min(4, scale * 1.2);
+                } else if (action === 'zoom-out') {
+                    scale = Math.max(0.25, scale / 1.2);
+                } else if (action === 'reset') {
+                    scale = 1;
+                    pointX = 0;
+                    pointY = 0;
+                } else if (action === 'fullscreen') {
+                    mermaidContainer.classList.toggle('fullscreen');
+                    const icon = button.querySelector('i');
+                    icon.classList.toggle('fa-expand');
+                    icon.classList.toggle('fa-compress');
+                }
+                setTransform();
+            });
+        }
+    });
+    </script>
+</body>
+</html>
