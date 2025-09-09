@@ -199,7 +199,6 @@
                 <p><strong class="text-accent-orange">Most Flexible:</strong> NVIDIA Jetson Nano</p>
                 <p><strong class="text-primary-blue-light">Best for Budget:</strong> Raspberry Pi 4</p>
             </div>
-            <div class="text-xs text-neutral-300 mt-4" id="contact-info"></div>
         </div>
     </nav>
 
@@ -207,7 +206,7 @@
         <header id="summary" class="section-anchor min-h-screen bg-gradient-to-br from-blue-900 via-primary-blue to-slate-900 text-white flex items-center justify-center p-4 lg:p-8">
             <div class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 flex flex-col justify-center text-center lg:text-left">
-                    <h1 class="text-4xl md:text-6xl font-bold font-serif leading-tight">Small Vision Models & Edge AI Hardware</h1>
+                    <h1 class="text-4xl md:text-6xl font-bold font-serif leading-tight text-white">Small Vision Models & Edge AI Hardware</h1>
                     <p class="mt-4 text-lg md:text-xl text-blue-200 max-w-3xl mx-auto lg:mx-0">A Definitive Technical Guide for Engineers, Researchers, and System Architects on Performance and Compatibility.</p>
                     <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                         <div class="bg-white/10 p-6 rounded-lg border border-white/20">
@@ -539,7 +538,6 @@
         <footer class="bg-neutral-800 text-neutral-300 py-8">
             <div class="max-w-7xl mx-auto px-6 text-center text-sm">
                 <p>This technical report was generated based on comprehensive research into small vision models and edge AI hardware.</p>
-                <p class="mt-2" id="footer-contact"></p>
             </div>
         </footer>
 
@@ -548,23 +546,6 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        // --- Configuration Management ---
-        const CONFIG = {
-            contact: {
-                email: "contact@edgeai-analytics.dev",
-                generatedDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-            }
-        };
-
-        // --- Dynamic Content Population ---
-        const contactInfoEl = document.getElementById('contact-info');
-        if (contactInfoEl) {
-            contactInfoEl.innerHTML = `Generated: ${CONFIG.contact.generatedDate}`;
-        }
-        const footerContactEl = document.getElementById('footer-contact');
-        if(footerContactEl) {
-            footerContactEl.innerHTML = `For inquiries, contact: <a href="mailto:${CONFIG.contact.email}" class="text-primary-blue-light hover:underline">${CONFIG.contact.email}</a>`;
-        }
         
         // --- Mermaid.js Initialization ---
         mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
